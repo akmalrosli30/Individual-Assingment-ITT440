@@ -1,0 +1,97 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+//Function to compare two strings
+int compare_strings(char x[], char y[])
+{
+	int z = 0;
+	while (x[z] == y[z])
+	{
+		if (x[z] == '\0' || y[z] == '\0')
+		break;
+		z++;
+	}
+	
+	if (x[z] == '\0' && y[z] =='\0')
+	return 0;
+	else
+	return -1;
+}
+
+int main(){
+	//Declare variables
+	int clientSocket;
+	char buffer[1024];
+	struct sockaddr_in serverAdd;
+	socklen_t addr_size;
+	
+	//Server settings
+	clientSocket = socket(AF_INET,SOCK_STREAM,0);
+	serverAdd.sin_family = AF_INET;
+	serverAdd.sin_port = htons(8888);
+	serverAdd.sin_addr.s_addr = inet_addr("192.168.231.3");
+	memset(serverAdd.sin_zero, '\0',sizeof serverAdd.sin_zero);
+	addr_size = sizeof serverAdd;
+	
+	//Connect server
+	if(connect(clientSocket, (struct sockaddr *)&serverAdd, addr_size) <0)
+	{
+		puts("CONNECTION ERROR!");
+	}
+	else{
+		puts("##### WELCOME TO THE CHATROOM #####\n");
+		
+	}
+	
+	//Input from Client1
+	printf("Client1 : ");
+	scanf(" %[^\n]s", buffer);
+	send(clientSocket,buffer,sizeof buffer -1,0);
+	
+	//Keep send & receive until "exit"
+	int exit = 0;
+	while(exit == 0)
+	{
+		if(compare_strings(buffer,"exit")==-1)
+		{
+			//Empty buffer
+			memset(&buffer[0],0,sizeof(buffer));
+			
+			//Receiving
+			int receive = recv(clientSocket,buffer,sizeof buffer -1,0);
+			
+			if (receive !=1)
+			{
+				//If not exit
+				if (compare_strings(buffer, "exit")==-1)
+				{
+					//Input form Client2
+					printf("Client2 : ");
+					printf("%s\n", buffer);
+					
+					//Empty buffer
+					memset(&buffer[0],0,sizeof(buffer));
+				}
+				//If Client2 "exit"
+				else exit=1;
+			}
+			//If rcv=1,no message received
+			else
+			{
+				//Input from Client1
+				printf("Client1 : ");
+				scanf(" %[^\n]s",buffer);
+				
+				//Send message to Server
+				send(clientSocket,buffer,sizeof buffer -1,0);
+				
+			}
+		}
+		//Exit loop when "exit"
+		else exit = 1;
+	}
+	
+	return 0;
+}
